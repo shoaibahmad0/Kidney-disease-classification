@@ -1,0 +1,627 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>MedScope AI - Kidney Disease Classification</title>
+  <link rel="stylesheet" href="{% static 'style.css' %}" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f6fa;
+      color: #1f2937;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .navbar {
+      width: 100%;
+      background: #fff;
+      box-shadow: 0 1px 0 #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      height: 64px;
+      position: relative;
+      z-index: 10;
+    }
+    .navbar-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .logo-heart {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+    }
+    .app-name {
+      font-weight: 700;
+      font-size: 1.35rem;
+      color: #1e293b;
+      letter-spacing: -1px;
+    }
+    .navbar-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      margin-left: 32px;
+    }
+    .navbar-link {
+      font-size: 1rem;
+      color: #475569;
+      text-decoration: none;
+      font-weight: 500;
+      padding: 0 2px 4px 2px;
+      transition: color 0.2s;
+      border-bottom: 2px solid transparent;
+    }
+    .navbar-link.active {
+      color: #2563eb;
+      border-bottom: 2px solid #2563eb;
+      font-weight: 600;
+    }
+    .navbar-link:hover {
+      color: #2563eb;
+    }
+    .navbar-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .user-name {
+      color: #334155;
+      font-weight: 500;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .profile-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #2563eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .profile-icon svg {
+      fill: #fff;
+      width: 22px;
+      height: 22px;
+    }
+    .logout-link {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #475569;
+      font-weight: 500;
+      text-decoration: none;
+      font-size: 1rem;
+      transition: color 0.2s;
+    }
+    .logout-link svg {
+      width: 20px;
+      height: 20px;
+      stroke: #475569;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+    .logout-link:hover {
+      color: #ef4444;
+    }
+    .logout-link:hover svg {
+      stroke: #ef4444;
+    }
+    .header-banner {
+      margin: 28px auto 0 auto;
+      max-width: 98vw;
+      width: 100%;
+      border-radius: 14px;
+      background: linear-gradient(90deg, #3793fc 0%, #4f86f7 100%);
+      padding: 38px 24px 24px 32px;
+      box-sizing: border-box;
+      box-shadow: 0 2px 8px rgba(55,147,252,0.07);
+      text-align: left;
+    }
+    .header-title {
+      color: #fff;
+      font-size: 2.2rem;
+      font-weight: 800;
+      margin-bottom: 8px;
+      text-align: left;
+    }
+    .header-subtitle {
+      color: #e0e7ef;
+      font-size: 1.12rem;
+      font-weight: 500;
+      text-align: left;
+    }
+    .container {
+      background: white;
+      max-width: 720px;
+      margin: 3rem auto 4rem;
+      padding: 2.5rem 3rem;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgb(0 0 0 / 0.1);
+      flex-grow: 1;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .upload-box {
+      border: 2.5px dashed #b6d3fa;
+      border-radius: 16px;
+      background: #fff;
+      min-height: 260px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 20px;
+      transition: border-color 0.2s;
+      text-align: center;
+      cursor: pointer;
+      user-select: none;
+      position: relative;
+    }
+    .upload-box:hover, .upload-box:focus-within {
+      border-color: #3793fc;
+      outline: none;
+    }
+    .upload-icon {
+      margin-bottom: 18px;
+    }
+    .upload-icon svg {
+      width: 56px;
+      height: 56px;
+      stroke: #b6d3fa;
+      display: block;
+      margin: 0 auto;
+    }
+    .upload-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #222;
+      margin-bottom: 8px;
+    }
+    .upload-desc {
+      font-size: 1.04rem;
+      color: #6b7280;
+      margin-bottom: 24px;
+    }
+    .select-btn {
+      background: #2563eb;
+      color: #fff;
+      font-weight: 600;
+      font-size: 1.08rem;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 32px;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(37,99,235,0.07);
+      transition: background 0.2s;
+      user-select: none;
+    }
+    .select-btn:hover, .select-btn:focus {
+      background: #1e40af;
+      outline: none;
+    }
+    input[type="file"] {
+      display: none;
+    }
+    #preview,
+    #uploadedImage {
+      margin-top: 1rem;
+      max-width: 320px;
+      max-height: 320px;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgb(0 0 0 / 0.1);
+      display: block;
+      object-fit: contain;
+      width: auto;
+      height: auto;
+    }
+    .prediction-section {
+      margin-top: 2rem;
+      border-top: 1px solid #e5e7eb;
+      padding-top: 2rem;
+    }
+    .prediction-section h3 {
+      font-weight: 700;
+      color: #1e40af;
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .prediction-section p {
+      font-size: 1.125rem;
+      margin: 0.25rem 0 1rem;
+      color: #374151;
+    }
+    .prediction-section button.speak-btn {
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    .prediction-section button.speak-btn:hover,
+    .prediction-section button.speak-btn:focus {
+      background-color: #1e40af;
+      outline: none;
+    }
+    .prediction-time {
+      margin-top: 1rem;
+      font-size: 1rem;
+      color: #6b7280;
+    }
+    .chart-section {
+      margin-top: 2rem;
+    }
+    .chart-section h3 {
+      font-weight: 700;
+      color: #1e40af;
+      margin-bottom: 1rem;
+      font-size: 1.5rem;
+    }
+    #predictionChart {
+      max-width: 100%;
+      border-radius: 12px;
+      box-shadow: 0 6px 18px rgb(0 0 0 / 0.1);
+    }
+    .chart-download-btn {
+      margin-top: 1rem;
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    .chart-download-btn:hover,
+    .chart-download-btn:focus {
+      background-color: #1e40af;
+      outline: none;
+    }
+
+    /* --- FOOTER STYLES --- */
+    .footer {
+      background: #fff;
+      margin-top: auto;
+      border-top: 1px solid #e5e7eb;
+      padding: 48px 0 0 0;
+    }
+    .footer-content {
+      display: flex;
+      justify-content: space-between;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 32px;
+      flex-wrap: wrap;
+      gap: 40px;
+    }
+    .footer-col {
+      flex: 1 1 180px;
+      min-width: 180px;
+    }
+    .footer-col h4 {
+      font-size: 1.13rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #1e293b;
+    }
+    .footer-col ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .footer-col ul li {
+      margin-bottom: 8px;
+    }
+    .footer-col ul li a {
+      color: #374151;
+      text-decoration: none;
+      font-size: 1rem;
+      transition: color 0.2s;
+    }
+    .footer-col ul li a:hover {
+      color: #2563eb;
+      text-decoration: underline;
+    }
+    .footer-brand {
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: #1e293b;
+      margin-bottom: 10px;
+    }
+    .footer-desc {
+      color: #374151;
+      font-size: 1rem;
+      margin-bottom: 0;
+      line-height: 1.5;
+    }
+    .footer-bottom {
+      text-align: center;
+      color: #6b7280;
+      font-size: 0.97rem;
+      padding: 18px 0 16px 0;
+      border-top: 1px solid #e5e7eb;
+      margin-top: 36px;
+      background: #fff;
+    }
+    @media (max-width: 900px) {
+      .footer-content {
+        flex-direction: column;
+        gap: 0;
+      }
+      .footer-col {
+        margin-bottom: 32px;
+      }
+    }
+    @media (max-width: 700px) {
+      .footer-content {
+        padding: 0 12px;
+      }
+      .footer-col {
+        min-width: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- NAVBAR -->
+  <nav class="navbar" role="navigation" aria-label="Main navigation">
+    <div class="navbar-left">
+      <!-- Heart SVG Icon -->
+      <span class="logo-heart" aria-hidden="true">
+        <svg viewBox="0 0 32 32" fill="none" aria-hidden="true" focusable="false" >
+          <path d="M16 28s-7.333-6.667-11.333-10.667C1.333 15.333 0 13.333 0 11.333 0 7.333 3.333 4 7.333 4c2.333 0 4.333 1.333 5.333 3.333C13.333 5.333 15.333 4 17.667 4 21.667 4 25 7.333 25 11.333c0 2-1.333 4-4.667 6-4 4-11.333 10.667-11.333 10.667z" stroke="#2563eb" stroke-width="2" fill="none"/>
+        </svg>
+      </span>
+      <span class="app-name">MedScope AI</span>
+      <div class="navbar-links">
+        <a href="#" class="navbar-link active" aria-current="page">Classification</a>
+        <a href="{% url 'history' %}" class="navbar-link">History</a>
+        <a href="#" class="navbar-link">Services</a>
+        <a href="#" class="navbar-link">Pricing</a>
+      </div>
+    </div>
+    <div class="navbar-right">
+      {% if user.is_authenticated %}
+        <span class="user-name" aria-label="Logged in user">👤 {{ user.username }}</span>
+      {% else %}
+        <span class="user-name" aria-label="Guest user">👤 Guest</span>
+      {% endif %}
+      <span class="profile-icon" aria-hidden="true">
+        <!-- User SVG Icon -->
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="8" r="4"/>
+          <path d="M4 20c0-2.21 3.58-4 8-4s8 1.79 8 4"/>
+        </svg>
+      </span>
+      <a href="{% url 'login' %}" class="logout-link" aria-label="Logout">
+        <!-- Logout SVG Icon -->
+        <svg stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M17 16l4-4m0 0l-4-4m4 4H7"></path>
+          <path d="M9 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h4"></path>
+        </svg>
+        Logout
+      </a>
+    </div>
+  </nav>
+
+  <!-- HEADER BANNER -->
+  <div class="header-banner" role="banner">
+    <h1 class="header-title">AI-Powered Kidney Disease Classification</h1>
+    <p class="header-subtitle">Upload medical imaging for instant analysis with confidence scoring</p>
+  </div>
+
+  <!-- MAIN CONTAINER -->
+  <main class="container" role="main">
+    <form method="POST" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+      <label class="upload-box" for="file-upload" tabindex="0" aria-label="Upload Medical Image">
+        <span class="upload-icon" aria-hidden="true">
+          <!-- Upload SVG Icon -->
+          <svg fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 48 48">
+            <path d="M24 36V12"/>
+            <path d="M16 20l8-8 8 8"/>
+            <path d="M40 36H8"/>
+          </svg>
+        </span>
+        <div class="upload-title">Upload Medical Image</div>
+        <div class="upload-desc">Drag and drop or click to select JPEG or PNG files</div>
+        <input 
+          type="file" 
+          id="file-upload" 
+          name="image" 
+          accept="image/jpeg, image/png" 
+          onchange="previewImage(this)" 
+          required
+        />
+        <button type="button" class="select-btn" onclick="document.getElementById('file-upload').click();">Select Image</button>
+      </label>
+
+      <img id="preview" alt="Image preview" style="display:none;" />
+      <button type="submit" aria-label="Predict kidney disease from uploaded image" style="margin-top: 24px;">Predict</button>
+    </form>
+
+    {% if prediction %}
+    <section class="prediction-section" aria-live="polite" aria-atomic="true">
+      <h3>Prediction</h3>
+      <p><strong>{{ prediction }}</strong> (Confidence: {{ confidence }}%)</p>
+      <button class="speak-btn" type="button" onclick="speakResult()" aria-label="Hear the prediction aloud">🔊 Hear Prediction</button>
+    </section>
+    {% endif %}
+
+    {% if time_taken %}
+    <p class="prediction-time">🕒 Prediction Time: {{ time_taken }} seconds</p>
+    {% endif %}
+
+    {% if image_url %}
+    <section aria-label="Uploaded medical image">
+      <h3>Uploaded Image</h3>
+      <img id="uploadedImage" src="{{ image_url }}" alt="Uploaded medical image" />
+    </section>
+    {% endif %}
+
+    {% if confidences %}
+    <section class="chart-section" aria-label="Confidence chart">
+      <h3>Confidence Chart</h3>
+      <canvas id="predictionChart" width="400" height="200" role="img" aria-label="Bar chart showing confidence levels"></canvas>
+      <button class="chart-download-btn" type="button" onclick="downloadChart()" aria-label="Download confidence chart as PNG">📥 Download Chart</button>
+    </section>
+    {% endif %}
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-col">
+        <div class="footer-brand">MedScope AI</div>
+        <div class="footer-desc">
+          Advanced AI-powered medical imaging analysis for healthcare professionals worldwide.
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Services</h4>
+        <ul>
+          <li><a href="#">Kidney Disease Classification</a></li>
+          <li><a href="#">Lung Imaging Analysis</a></li>
+          <li><a href="#">Neurological Imaging</a></li>
+          <li><a href="#">Custom AI Models</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Support</h4>
+        <ul>
+          <li><a href="#">Documentation</a></li>
+          <li><a href="#">API Reference</a></li>
+          <li><a href="#">Contact Support</a></li>
+          <li><a href="#">System Status</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="#">About Us</a></li>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Terms of Service</a></li>
+          <li><a href="#">HIPAA Compliance</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      © 2024 MedScope AI. All rights reserved. HIPAA compliant medical AI platform.
+    </div>
+  </footer>
+
+  <!-- SCRIPTS -->
+  <script>
+    function previewImage(input) {
+      const preview = document.getElementById('preview');
+      const file = input.files[0];
+      if (file) {
+        preview.src = URL.createObjectURL(file);
+        preview.style.display = 'block';
+      } else {
+        preview.style.display = 'none';
+        preview.src = '';
+      }
+    }
+
+    function speakResult() {
+      const msg = new SpeechSynthesisUtterance("The predicted result is {{ prediction }} with {{ confidence }} percent confidence.");
+      window.speechSynthesis.speak(msg);
+    }
+
+    function downloadChart() {
+      const canvas = document.getElementById('predictionChart');
+      const link = document.createElement('a');
+      link.download = 'prediction_chart.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+
+    {% if confidences %}
+    const ctx = document.getElementById('predictionChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: {{ labels|safe }},
+        datasets: [{
+          label: 'Confidence (%)',
+          data: {{ confidences|safe }},
+          backgroundColor: '#2563eb',
+          borderRadius: 6,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        responsive: true,
+        animation: {
+          duration: 800,
+          easing: 'easeOutQuart',
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 100,
+            ticks: {
+              stepSize: 10,
+              color: '#374151',
+              font: {
+                size: 14,
+                weight: '600'
+              }
+            },
+            grid: {
+              color: '#e5e7eb'
+            }
+          },
+          x: {
+            ticks: {
+              color: '#374151',
+              font: {
+                size: 14,
+                weight: '600'
+              }
+            },
+            grid: {
+              display: false
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            enabled: true,
+            backgroundColor: '#2563eb',
+            titleColor: '#fff',
+            bodyColor: '#fff',
+            cornerRadius: 6
+          }
+        }
+      }
+    });
+    {% endif %}
+  </script>
+</body>
+</html>
