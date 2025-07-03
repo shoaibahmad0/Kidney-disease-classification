@@ -1,0 +1,26 @@
+
+# Python
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.log
+
+# Virtual environment
+venv/
+env/
+.fyp_env/
+.fypenv/
+*.env
+
+# Django
+db.sqlite3
+/media/
+*.pyc
+
+# VSCode or IDEs
+.vscode/
+.idea/
+
+# System
+.DS_Store
+Thumbs.db
