@@ -1,0 +1,1 @@
+web: gunicorn kideny_disease_classification.wsgi
