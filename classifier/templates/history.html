@@ -30,13 +30,15 @@
 <body>
     <div class="container">
         <div class="card p-4">
-            <h2 class="mb-4 text-center text-success">📋 Your Prediction History</h2>
+            <h2 class="mb-4 text-center text-success">📋 Patient Prediction History</h2>
 
             {% if predictions %}
             <div class="table-responsive">
                 <table class="table table-bordered table-hover align-middle text-center">
                     <thead>
                         <tr>
+                            <th>Patient ID</th>
+                            <th>Patient Name</th>
                             <th>Image</th>
                             <th>Prediction</th>
                             <th>Confidence</th>
@@ -47,6 +49,8 @@
                     <tbody>
                         {% for record in predictions %}
                         <tr>
+                            <td>{{ record.patient_id }}</td>
+                            <td>{{ record.patient_name }}</td>
                             <td><img src="{{ record.image.url }}" alt="Prediction Image" width="100"></td>
                             <td><strong>{{ record.prediction }}</strong></td>
                             <td>{{ record.confidence }}%</td>

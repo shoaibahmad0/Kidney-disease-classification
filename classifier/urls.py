@@ -12,4 +12,5 @@ urlpatterns = [
     path('history/', views.history_view, name='history'),
     path('upload/', views.upload_image, name='upload'), 
     path('activate/<uidb64>/<token>/', activate_account, name='activate'),
+    path('history/', views.doctor_history_view, name='history'),
 ]

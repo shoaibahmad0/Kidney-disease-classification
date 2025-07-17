@@ -3,12 +3,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>MedScope AI - Kidney Disease Classification</title>
+  <title>Kidney AI - Kidney Disease Classification</title>
   <link rel="stylesheet" href="{% static 'style.css' %}" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     * { box-sizing: border-box; }
-    body {
+    body {                                   
       margin: 0;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: #f5f6fa;
@@ -29,7 +29,7 @@
       position: relative;
       z-index: 10;
     }
-    .navbar-left {
+    .navbar-left{
       display: flex;
       align-items: center;
       gap: 16px;
@@ -393,7 +393,7 @@
           <path d="M16 28s-7.333-6.667-11.333-10.667C1.333 15.333 0 13.333 0 11.333 0 7.333 3.333 4 7.333 4c2.333 0 4.333 1.333 5.333 3.333C13.333 5.333 15.333 4 17.667 4 21.667 4 25 7.333 25 11.333c0 2-1.333 4-4.667 6-4 4-11.333 10.667-11.333 10.667z" stroke="#2563eb" stroke-width="2" fill="none"/>
         </svg>
       </span>
-      <span class="app-name">MedScope AI</span>
+      <span class="app-name">Kidney AI</span>
       <div class="navbar-links">
         <a href="#" class="navbar-link active" aria-current="page">Classification</a>
         <a href="{% url 'history' %}" class="navbar-link">History</a>
@@ -458,6 +458,11 @@
       </label>
 
       <img id="preview" alt="Image preview" style="display:none;" />
+
+      <!-- Patient Info Inputs (added inside the form, before submit button) -->
+      <input type="text" name="patient_name" class="form-control" placeholder="Enter Patient Name" required>
+      <input type="text" name="patient_id" class="form-control" placeholder="Enter Patient ID" required>
+
       <button type="submit" aria-label="Predict kidney disease from uploaded image" style="margin-top: 24px;">Predict</button>
     </form>
 

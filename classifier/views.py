@@ -11,7 +11,7 @@ from django.core.mail import send_mail
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib import messages
 
-from .forms import ImageUploadForm
+from .forms import ImageUploadForm, CustomUserCreationForm
 from .models import Prediction
 
 from ultralytics import YOLO
@@ -19,52 +19,52 @@ from PIL import Image
 import os
 import time
 from django.conf import settings
-from .forms import CustomUserCreationForm
 
-# Load YOLO model
+# Load YOLO model once
 model_path = os.path.join(settings.BASE_DIR, 'classifier', 'kidney_model.pt')
 model = YOLO(model_path)
 categories = list(model.names.values())
 
-# ------------------- Signup with Email Verification ------------------------
-
-
 def landing_redirect(request):
+    """Redirect users to login or upload page based on authentication."""
     if request.user.is_authenticated:
-        return redirect('upload')  # Go to prediction page
-    else:
-        return redirect('login')  # Go to login if not logged in
-
+        return redirect('upload')
+    return redirect('login')
 
 def signup_view(request):
+    """Handle user signup with email verification."""
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
-            user.email = form.cleaned_data['email']  # Save email
-            user.is_active = False  # Deactivate until email verified
+            user.email = form.cleaned_data['email']
+            user.is_active = False
             user.save()
 
+            # Generate verification link
             token = default_token_generator.make_token(user)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             current_site = get_current_site(request)
-            verification_link = f"http://{current_site.domain}/activate/{uid}/{token}/"
+            link = f"http://{current_site.domain}/activate/{uid}/{token}/"
 
+            # Send verification email
             subject = 'Verify your Kidney Disease Classifier account'
             message = render_to_string('email_verification.html', {
                 'user': user,
-                'verification_link': verification_link,
+                'verification_link': link,
             })
+            send_mail(subject, message,
+                      settings.EMAIL_HOST_USER,
+                      [user.email],
+                      fail_silently=False)
 
-            send_mail(subject, message, 'shoaibahmadbaig015@gmail.com', [user.email], fail_silently=False)
-            return HttpResponse("✅ Please check your email to verify your account.")
+            return HttpResponse("✅ Check your email to verify your account.")
     else:
         form = CustomUserCreationForm()
     return render(request, 'signup.html', {'form': form})
 
-# ------------------- Email Activation ------------------------
-
 def activate_account(request, uidb64, token):
+    """Activate a user’s account via the emailed link."""
     try:
         uid = force_str(urlsafe_base64_decode(uidb64))
         user = User.objects.get(pk=uid)
@@ -74,66 +74,77 @@ def activate_account(request, uidb64, token):
     if user and default_token_generator.check_token(user, token):
         user.is_active = True
         user.save()
-        login(request, user)  # Log the user in immediately after activation
-        messages.success(request, "✅ Your account has been activated and you are now logged in.")
-        return redirect('upload')  # Redirect to prediction/upload page
-    else:
-        return HttpResponse("❌ Activation link is invalid or has expired.")
-# ------------------- Prediction History ------------------------
+        login(request, user)
+        messages.success(request, " Your account is now active!")
+        return redirect('upload')
+    return HttpResponse(" Activation link is invalid or expired.")
 
 @login_required
 def history_view(request):
+    """Display the logged-in user’s prediction history."""
     predictions = Prediction.objects.filter(user=request.user).order_by('-timestamp')
     return render(request, 'history.html', {'predictions': predictions})
 
+from django.contrib.auth.decorators import login_required, user_passes_test
 
-# ------------------- Upload & Predict ------------------------
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def doctor_history_view(request):
+    predictions = Prediction.objects.select_related('user').order_by('-timestamp')
+    return render(request, 'history.html', {'predictions': predictions})
 
 @login_required
 def upload_image(request):
-    prediction = None
-    confidence = None
-    all_confidences = None
-    image_url = None
-    time_taken = None
+    """Handle image upload, prediction, and result display."""
     form = ImageUploadForm()
+    prediction = confidence = all_confidences = image_url = time_taken = None
 
     if request.method == 'POST':
         form = ImageUploadForm(request.POST, request.FILES)
+        patient_name = request.POST.get('patient_name')
+        patient_id = request.POST.get('patient_id')
+
         if form.is_valid():
             img_file = form.cleaned_data['image']
             img = Image.open(img_file).convert("RGB")
 
+            # Save uploaded file
             os.makedirs(settings.MEDIA_ROOT, exist_ok=True)
             media_path = os.path.join(settings.MEDIA_ROOT, img_file.name)
-            with open(media_path, 'wb+') as destination:
+            with open(media_path, 'wb+') as dest:
                 for chunk in img_file.chunks():
-                    destination.write(chunk)
+                    dest.write(chunk)
             image_url = os.path.join(settings.MEDIA_URL, img_file.name)
 
+            # Run prediction
             start = time.time()
             results = model(img)
-            end = time.time()
-            time_taken = round(end - start, 2)
+            time_taken = round(time.time() - start, 2)
 
+            # Extract probabilities
             if hasattr(results[0], "probs") and results[0].probs is not None:
-                probs_tensor = results[0].probs.data
-                class_idx = results[0].probs.top1
-                top1_conf = results[0].probs.top1conf.item() if results[0].probs.top1conf is not None else probs_tensor[class_idx].item()
+                probs = results[0].probs.data
+                idx = results[0].probs.top1
+                top_conf = (results[0].probs.top1conf.item()
+                            if results[0].probs.top1conf is not None
+                            else probs[idx].item())
 
-                prediction = categories[class_idx]
-                confidence = round(top1_conf * 100, 2)
-                all_confidences = [round(p * 100, 2) for p in probs_tensor.tolist()]
+                prediction = categories[idx]
+                confidence = round(top_conf * 100, 2)
+                all_confidences = [round(p * 100, 2) for p in probs.tolist()]
 
+                # Save prediction record
                 Prediction.objects.create(
                     user=request.user,
+                    patient_name=patient_name,
+                    patient_id=patient_id,
                     image=img_file,
                     image_name=img_file.name,
                     prediction=prediction,
                     confidence=confidence,
                     all_confidences=all_confidences,
                     time_taken=time_taken,
-                    model_version='YOLOv8'
+                    model_version='YOLOv11'
                 )
 
     return render(request, 'upload.html', {
@@ -143,5 +154,5 @@ def upload_image(request):
         'confidence': confidence,
         'labels': categories,
         'confidences': all_confidences,
-        'time_taken': time_taken
+        'time_taken': time_taken,
     })
