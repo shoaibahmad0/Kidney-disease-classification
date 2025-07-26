@@ -12,5 +12,6 @@ urlpatterns = [
     path('history/', views.history_view, name='history'),
     path('upload/', views.upload_image, name='upload'), 
     path('activate/<uidb64>/<token>/', activate_account, name='activate'),
-    path('history/', views.doctor_history_view, name='history'),
+    path('history/', views.doctor_history_view, name='prediction_history'),
+    path('delete/<int:record_id>/', views.delete_prediction, name='delete_prediction'),
 ]
