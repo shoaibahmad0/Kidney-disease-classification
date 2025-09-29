@@ -453,8 +453,6 @@ button[type="submit"]:hover {
       <div class="navbar-links">
         <a href="#" class="navbar-link active" aria-current="page">Classification</a>
         <a href="{% url 'history' %}" class="navbar-link">History</a>
-        <a href="#" class="navbar-link">Services</a>
-        <a href="#" class="navbar-link">Pricing</a>
       </div>
     </div>
     <div class="navbar-right">
@@ -518,7 +516,6 @@ button[type="submit"]:hover {
       <!-- Patient Info Inputs (added inside the form, before submit button) -->
       <div class="input-row">
     <input type="text" name="patient_name" class="form-control" placeholder="Enter Patient Name" required>
-    <input type="text" name="patient_id" class="form-control" placeholder="Enter Patient ID" required>
   </div>
 
       <button type="submit" aria-label="Predict kidney disease from uploaded image">Predict</button>
@@ -545,6 +542,7 @@ button[type="submit"]:hover {
 
     {% if confidences %}
     <section class="chart-section" aria-label="Confidence chart">
+      <p>Disease Area: {{ disease_area_mm2 }} mm²</p>
       <h3>Confidence Chart</h3>
       <canvas id="predictionChart" width="400" height="200" role="img" aria-label="Bar chart showing confidence levels"></canvas>
       <button class="chart-download-btn" type="button" onclick="downloadChart()" aria-label="Download confidence chart as PNG">📥 Download Chart</button>

@@ -14,9 +14,10 @@
         }
         .card {
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
         }
         th {
-            background-color: #00695c;
+            background-color: #0d6efd; /* Bootstrap primary blue */
             color: white;
         }
         img {
@@ -25,12 +26,15 @@
         .back-link {
             margin-top: 20px;
         }
+        h2 {
+            color: #0d6efd; /* Bootstrap primary blue */
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="card p-4">
-            <h2 class="mb-4 text-center text-success">📋 Patient Prediction History</h2>
+            <h2 class="mb-4 text-center">📋 Patient Prediction History</h2>
 
             {% if predictions %}
             <div class="table-responsive">
@@ -42,10 +46,10 @@
                             <th>Image</th>
                             <th>Prediction</th>
                             <th>Confidence</th>
+                            <th>Disease Area (mm²)</th>
                             <th>Time Taken</th>
                             <th>Date</th>
                             <th>Action</th>
-
                         </tr>
                     </thead>
                     <tbody>
@@ -56,6 +60,7 @@
                             <td><img src="{{ record.image.url }}" alt="Prediction Image" width="100"></td>
                             <td><strong>{{ record.prediction }}</strong></td>
                             <td>{{ record.confidence }}%</td>
+                            <td>{{ record.disease_area_mm2|floatformat:2 }} mm²</td>
                             <td>{{ record.time_taken }}s</td>
                             <td>{{ record.timestamp|date:"Y-m-d H:i" }}</td>
                             <td>
@@ -66,8 +71,7 @@
                                     </button>
                                 </form>
                             </td>
-
-                                                    </tr>
+                        </tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -77,7 +81,7 @@
             {% endif %}
 
             <div class="text-center back-link">
-                <a href="{% url 'upload' %}" class="btn btn-outline-success">← Back to Upload</a>
+                <a href="{% url 'upload' %}" class="btn btn-outline-primary">← Back to Upload</a>
             </div>
         </div>
     </div>

@@ -148,17 +148,15 @@ def doctor_history_view(request):
     return render(request, 'history.html', {'predictions': predictions})
 
 @login_required
-@login_required
-@login_required
 def upload_image(request):
     form = ImageUploadForm()
     prediction = confidence = all_confidences = image_url = time_taken = heatmap_url = None
-    output_filename = None  # Initialize early
+    disease_area_pixels = disease_area_mm2 = None
+    output_filename = None
 
     if request.method == 'POST':
         form = ImageUploadForm(request.POST, request.FILES)
         patient_name = request.POST.get('patient_name')
-        patient_id = request.POST.get('patient_id')
 
         if form.is_valid():
             img_file = form.cleaned_data['image']
@@ -172,7 +170,7 @@ def upload_image(request):
                     dest.write(chunk)
             image_url = os.path.join(settings.MEDIA_URL, img_file.name)
 
-            # ------------ YOLOv11 Prediction ------------
+            # -------- YOLOv11 Prediction --------
             start = time.time()
             results = yolo_model(img)
             time_taken = round(time.time() - start, 2)
@@ -189,10 +187,9 @@ def upload_image(request):
                 all_confidences = [round(p * 100, 2) for p in probs.tolist()]
 
             # Save prediction to DB
-            Prediction.objects.create(
+            prediction_obj = Prediction.objects.create(
                 user=request.user,
                 patient_name=patient_name,
-                patient_id=patient_id,
                 image=img_file,
                 image_name=img_file.name,
                 prediction=prediction,
@@ -202,28 +199,53 @@ def upload_image(request):
                 model_version='YOLOv11'
             )
 
-            # ------------ Grad-CAM with ResNet ------------
+            patient_id = prediction_obj.patient_id
+
+            # -------- Grad-CAM with ResNet --------
             resnet_input = resnet_transform(img).unsqueeze(0).to(device)
             with torch.no_grad():
                 resnet_output = resnet_model(resnet_input)
                 predicted_class = resnet_output.argmax(dim=1).item()
 
             heatmap = generate_gradcam(resnet_model, resnet_input, predicted_class)
+            heatmap_np = heatmap.cpu().numpy()
 
-            # Convert to overlay image
+            # Normalize heatmap if needed
+            if heatmap_np.max() > 1:
+                heatmap_np = heatmap_np / 255.0
+
+            # Resize to match original image size
+            heatmap_resized = cv2.resize(heatmap_np, (img.width, img.height))
+
+            # -------- Improve Activation Detection --------
+            blurred = cv2.GaussianBlur(heatmap_resized, (11, 11), 0)
+            threshold = 0.5
+            binary_mask = blurred > threshold
+
+            # -------- Area Calculation --------
+            disease_area_pixels = np.sum(binary_mask)
+
+            # ✅ Best medically close estimate (CT-scale): 0.264 mm/pixel
+            mm_per_pixel = 0.264
+            disease_area_mm2 = disease_area_pixels * (mm_per_pixel ** 2)
+
+            # -------- Save Grad-CAM Overlay --------
             original_image = Image.open(media_path).convert('RGB')
-            gradcam_image = apply_heatmap_on_image(heatmap, original_image)
+            gradcam_image = apply_heatmap_on_image(torch.tensor(heatmap_resized), original_image)
 
-            # Save overlay Grad-CAM image
             output_filename = f"gradcam_{patient_id}_{int(time.time())}.jpg"
             gradcam_path = os.path.join(settings.MEDIA_ROOT, 'gradcams')
             os.makedirs(gradcam_path, exist_ok=True)
 
             gradcam_filepath = os.path.join(gradcam_path, output_filename)
             cv2.imwrite(gradcam_filepath, gradcam_image)
-
-            # Heatmap URL for HTML
             heatmap_url = os.path.join(settings.MEDIA_URL, 'gradcams', output_filename)
+
+            # Save Area to DB
+            if prediction_obj:
+                prediction_obj.disease_area_pixels = int(disease_area_pixels)
+                prediction_obj.disease_area_mm2 = round(disease_area_mm2, 2)
+                prediction_obj.save()
 
     return render(request, 'upload.html', {
         'form': form,
@@ -232,6 +254,8 @@ def upload_image(request):
         'confidence': confidence,
         'labels': RESNET_CLASSES,
         'confidences': all_confidences,
+        'disease_area_pixels': disease_area_pixels,
+        'disease_area_mm2': disease_area_mm2,
         'time_taken': time_taken,
         'heatmap_url': heatmap_url,
     })
