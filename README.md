@@ -31,7 +31,7 @@ Tools: Jupyter Notebook, Google Colab, Git
 
 | Model    | Accuracy |
 | -------- | -------- |
-| YOLOv8   | 94.8%    |
+| YOLOv8   | 96.8%    |
 
 
 
