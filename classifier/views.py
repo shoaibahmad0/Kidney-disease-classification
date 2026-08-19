@@ -12,6 +12,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
+from django.views.decorators.http import require_POST
 from .forms import ImageUploadForm, CustomUserCreationForm
 from .models import Prediction
 import cv2
@@ -130,11 +131,12 @@ def history_view(request):
 
  
 
+@login_required
+@require_POST
 def delete_prediction(request, record_id):
-    if request.method == 'POST':
-        record = get_object_or_404(Prediction, id=record_id)
-        record.delete()
-        messages.success(request, "Prediction record deleted successfully.")
+    record = get_object_or_404(Prediction, id=record_id, user=request.user)
+    record.delete()
+    messages.success(request, "Prediction record deleted successfully.")
     return redirect('history')
 
 
@@ -164,11 +166,13 @@ def upload_image(request):
 
             # Save uploaded image
             os.makedirs(settings.MEDIA_ROOT, exist_ok=True)
-            media_path = os.path.join(settings.MEDIA_ROOT, img_file.name)
+            safe_filename = f"{os.urandom(16).hex()}_{os.path.basename(img_file.name)}"
+            media_path = os.path.join(settings.MEDIA_ROOT, 'uploads', safe_filename)
+            os.makedirs(os.path.dirname(media_path), exist_ok=True)
             with open(media_path, 'wb+') as dest:
                 for chunk in img_file.chunks():
                     dest.write(chunk)
-            image_url = os.path.join(settings.MEDIA_URL, img_file.name)
+            image_url = os.path.join(settings.MEDIA_URL, 'uploads', safe_filename)
 
             # -------- YOLOv11 Prediction --------
             start = time.time()

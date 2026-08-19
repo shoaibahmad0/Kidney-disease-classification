@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth.models import User
 import datetime
 import random
+import uuid
+from pathlib import Path
 
 def generate_patient_id():
     year = datetime.datetime.now().year
@@ -9,11 +11,16 @@ def generate_patient_id():
     return f"KD-{year}-{rand}"
 
 
+def upload_path(instance, filename):
+    extension = Path(filename).suffix.lower() or '.img'
+    return f'uploads/{uuid.uuid4().hex}{extension}'
+
+
 class Prediction(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)  # doctor
     patient_name = models.CharField(max_length=100)
     patient_id = models.CharField(max_length=50, unique=True, default=generate_patient_id)
-    image = models.ImageField(upload_to='uploads/')
+    image = models.ImageField(upload_to=upload_path)
     image_name = models.CharField(max_length=255, null=True, blank=True)
     prediction = models.CharField(max_length=50)
     confidence = models.FloatField()
